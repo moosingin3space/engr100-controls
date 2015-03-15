@@ -6,6 +6,8 @@
 #define INPUT_CHANNEL_OFFSET 2
 #define OUTPUT_CHANNEL_OFFSET 6
 
+#define SERVO_GAIN 162
+
 int numOutputChans[] = { 2, 1, 1 };
 int *outputChans[] = {
     (int[]) { 0, 1 },
