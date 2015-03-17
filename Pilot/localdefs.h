@@ -16,3 +16,4 @@ int *outputChans[] = {
 };
 
 int gains[] = { 100, 100, 100 };
+int offsets[] = { 0, 0, 0 };

@@ -1,6 +1,5 @@
 #include <Servo.h>
 #include <PinChangeInt.h>
-#include <stdarg.h>
 #include "localdefs.h"
 
 #define PIN2CHAN(x) x - INPUT_CHANNEL_OFFSET
@@ -11,11 +10,13 @@ Servo output[NUM_OUTPUT_CHANNELS];
 volatile int input[NUM_INPUT_CHANNELS];
 volatile int prev_time[NUM_INPUT_CHANNELS];
 
-int amplify(int gain, int time) {
+int amplify(int gain, int offset, int time) {
   // start by mapping the time to a percentage power scale
   int pct = map(time, PWM_MIN, PWM_MAX, 0, 100);
   // Now, multiply by the gain and map it back to a percentage power scale
   int outPct = map(constrain(pct * gain, 0, 10000), 0, 10000, 0, 100);
+  // Now, add the offset
+  outPct = constrain(outPct + offset, 0, 100);
   // Now, map it back to a PWM scale
   int outTime = map(outPct, 0, 100, PWM_MIN, PWM_MAX);
   return outTime;
@@ -41,7 +42,7 @@ void falling() {
   uint8_t pin = PCintPort::arduinoPin;
   PCintPort::attachInterrupt(pin, &rising, RISING);
   input[PIN2CHAN(pin)] = micros() - prev_time[PIN2CHAN(pin)];
-  int servo_time = amplify(gains[PIN2CHAN(pin)], input[PIN2CHAN(pin)]);
+  int servo_time = amplify(gains[PIN2CHAN(pin)], offsets[PIN2CHAN(pin)], input[PIN2CHAN(pin)]);
   write_servo(servo_time, numOutputChans[PIN2CHAN(pin)], outputChans[PIN2CHAN(pin)]);
 }
 

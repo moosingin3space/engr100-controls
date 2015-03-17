@@ -1,5 +1,10 @@
 # Code for ENGR 100 Blimp
 
+## 2015-03-17
+
+The Arduino now implements amplifier offsets for servo control. These
+are configurable in the `localdefs.h` file as well.
+
 ## 2015-03-15
 
 The Arduino now implements basic gains for servo control. All code is 
