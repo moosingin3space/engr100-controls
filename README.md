@@ -1,5 +1,10 @@
 # Code for ENGR 100 Blimp
 
+## 2015-03-19
+
+The Arduino no longer outputs debugging information, and as such has
+faster ISRs.
+
 ## 2015-03-17
 
 The Arduino now implements amplifier offsets for servo control. These
