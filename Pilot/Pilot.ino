@@ -46,10 +46,6 @@ void write_servo(int time, int numChans, int chans[]) {
   for (int i = 0; i < numChans; i++) {
       // get the output channel
       int chan = chans[i];
-      // Serial output for debugging
-      Serial.print(chan);
-      Serial.print(": ");
-      Serial.println(time);
       // Write the signal using the Servo library
       output[chan].writeMicroseconds(time);
   }
@@ -96,9 +92,6 @@ void setup() {
     // Attach rising-edge interrupts
     PCintPort::attachInterrupt(INPUT_CHANNEL_OFFSET + i, &rising, RISING);
   }
-  // Open serial port for debugging. Use low-rate serial port to limit CPU time
-  // spent in I/O routines.
-  Serial.begin(9600);
 }
 
 // This is purposely left empty to avoid synchronization
