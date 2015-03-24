@@ -13,7 +13,12 @@
 
 // This gain enables the full range-of-motion of a servo without the need for
 // the trim-tabs.
-#define SERVO_GAIN 162
+#define SERVO_FULL_RANGE_OF_MOTION 162
+
+
+// Input 0 - Rear servo (rudder) position
+// Input 1 - Propeller speed
+// Input 2 - Front servo (elevator) position
 
 // Mapping of the input channels to output channels
 int numOutputChans[] = { 
@@ -30,9 +35,9 @@ int *outputChans[] = {
 // Gains for each input channel
 // 100-based
 int gains[] = { 
-    100, // In 0
-    100, // In 1
-    100  // In 2
+    -100,                        // In 0
+    100,                         // In 1
+    100                          // In 2
 };
 // Offsets for each input channel
 // Applied to a signal varying from
