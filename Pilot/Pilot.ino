@@ -1,13 +1,9 @@
 // Used to write PWM signals
 #include <Servo.h>
-// Used to listen for pin-change interrupts
+// Used for pin change interrupts
 #include <PinChangeInt.h>
-// Contains blimp-specific configuration
+// Contains blimp channel configuration
 #include "localdefs.h"
-
-// This macro defines the conversion between
-// a pin number and the channel number
-#define PIN2CHAN(x) x - INPUT_CHANNEL_OFFSET
 
 // These macros define the range of the 
 // PWM signals that the radio receives and
@@ -15,21 +11,40 @@
 #define PWM_MIN 900
 #define PWM_MAX 2100
 
-// Each output channel is stored in this array
-Servo output[NUM_OUTPUT_CHANNELS];
+// Define all outputs
+Servo frontPropeller;
+Servo rearPropeller;
+Servo rudderServo;
+Servo elevatorServo;
 
-// The input PWM signals
-volatile int input[NUM_INPUT_CHANNELS];
+// Holds the most recent rising-edge times
+volatile int throttlePrevTime = 0;
+volatile int rudderPrevTime = 0;
+volatile int elevatorPrevTime = 0;
 
-// The time of the rising-edge signal.
-// Temporary.
-volatile int prev_time[NUM_INPUT_CHANNELS];
+// Holds the most recent times
+volatile int throttleTime = 0;
+volatile int rudderTime = 0;
+volatile int elevatorTime = 0;
+
+inline void writeThrottle(int mus) {
+    frontPropeller.writeMicroseconds(mus);
+    rearPropeller.writeMicroseconds(mus);
+}
+
+inline void writeRudder(int mus) {
+    rudderServo.writeMicroseconds(mus);
+}
+
+inline void writeElevator(int mus) {
+    elevatorServo.writeMicroseconds(mus);
+}
 
 // Amplifies the PWM signal stored in 'time'
 // by the 100-based 'gain' parameter.
 // The offset parameter is applied after
 // the amplification.
-int amplify(int gain, int offset, int time) {
+int amplify(int time, int gain, int offset) {
   // start by mapping the time to a percentage power scale
   int pct = map(time, PWM_MIN, PWM_MAX, -100, 100);
   // Now, multiply by the gain and map it back to a percentage power scale
@@ -41,61 +56,63 @@ int amplify(int gain, int offset, int time) {
   return outTime;
 }
 
-// Writes a PWM signal to any number of output channels
-void write_servo(int time, int numChans, int chans[]) {
-  for (int i = 0; i < numChans; i++) {
-      // get the output channel
-      int chan = chans[i];
-      // Write the signal using the Servo library
-      output[chan].writeMicroseconds(time);
-  }
-}
-
-// Called on the rising edge of a PWM signal
+// Rising-edge interrupt handler
 void rising() {
-  uint8_t pin = PCintPort::arduinoPin;
-  // Listen for the falling edge on this pin
-  PCintPort::attachInterrupt(pin, &falling, FALLING);
-  // Save the time of this event with the channel.
-  prev_time[PIN2CHAN(pin)] = micros();
+    uint8_t pin = PCintPort::arduinoPin;
+    PCintPort::attachInterrupt(pin, &falling, FALLING);
+    switch(pin) {
+        case IN_THROTTLE: throttlePrevTime = micros();
+                          break;
+        case IN_RUDDER:   rudderPrevTime = micros();
+                          break;
+        case IN_ELEVATOR: elevatorPrevTime = micros();
+                          break;
+    }
 }
 
-// Called on the falling edge of a PWM signal
+// Falling-edge interrupt handler
 void falling() {
-  uint8_t pin = PCintPort::arduinoPin;
-  // Re-register listening for the rising edge
-  PCintPort::attachInterrupt(pin, &rising, RISING);
-  // Using the rising-edge time, calculate the width
-  input[PIN2CHAN(pin)] = micros() - prev_time[PIN2CHAN(pin)];
-  // Amplify the signal using the associated gain, offset, and input
-  int servo_time = amplify(gains[PIN2CHAN(pin)], offsets[PIN2CHAN(pin)], input[PIN2CHAN(pin)]);
-  // Write the amplified signal to the associated output channels
-  write_servo(servo_time, numOutputChans[PIN2CHAN(pin)], outputChans[PIN2CHAN(pin)]);
+    uint8_t pin = PCintPort::arduinoPin;
+    PCintPort::attachInterrupt(pin, &rising, RISING);
+    switch(pin) {
+        case IN_THROTTLE: throttleTime = micros() - throttlePrevTime;
+                          throttleTime = amplify(throttleTime, THROTTLE_GAIN, THROTTLE_OFFSET);
+                          writeThrottle(throttleTime);
+                          break;
+        case IN_RUDDER:   rudderTime = micros() - rudderPrevTime;
+                          rudderTime = amplify(rudderTime, RUDDER_GAIN, RUDDER_OFFSET);
+                          writeRudder(rudderTime);
+                          break;
+        case IN_ELEVATOR: elevatorTime = micros() - elevatorPrevTime;
+                          elevatorTime = amplify(elevatorTime, ELEVATOR_GAIN, ELEVATOR_OFFSET);
+                          writeElevator(elevatorTime);
+                          break;
+    }
 }
 
 // Initialize the program
 void setup() {
   // initialize output servos
-  for (int i = 0; i < NUM_OUTPUT_CHANNELS; i++) {
-    // Associate output pins with channels
-    output[i].attach(OUTPUT_CHANNEL_OFFSET + i);
-  }
-  // initialize receiver inputs
-  for (int i = 0; i < NUM_INPUT_CHANNELS; i++) {
-    // Zero all receiver state
-    input[i] = 0;
-    prev_time[i] = 0;
-    // Set the inputs to input mode and activate 20kohm pull-up resistors.
-    // This is done because otherwise it is difficult to discern pin changes
-    pinMode(INPUT_CHANNEL_OFFSET + i, INPUT);
-    digitalWrite(INPUT_CHANNEL_OFFSET + i, HIGH);
-    // Attach rising-edge interrupts
-    PCintPort::attachInterrupt(INPUT_CHANNEL_OFFSET + i, &rising, RISING);
-  }
+  frontPropeller.attach(FRONT_PROPELLER);
+  rearPropeller.attach(REAR_PROPELLER);
+  rudderServo.attach(RUDDER_SERVO);
+  elevatorServo.attach(ELEVATOR_SERVO);
+
+  // configure input channels
+  pinMode(IN_THROTTLE, INPUT);
+  pinMode(IN_RUDDER, INPUT);
+  pinMode(IN_ELEVATOR, INPUT);
+  pinMode(IN_BRAKE, INPUT);
+  // Activate 20kohm pull-up resistors
+  digitalWrite(IN_THROTTLE, HIGH);
+  digitalWrite(IN_RUDDER, HIGH);
+  digitalWrite(IN_ELEVATOR, HIGH);
+  digitalWrite(IN_BRAKE, HIGH);
+  // Attach rising-edge interrupts
+  PCintPort::attachInterrupt(IN_THROTTLE, &rising, RISING);
+  PCintPort::attachInterrupt(IN_RUDDER, &rising, RISING);
+  PCintPort::attachInterrupt(IN_ELEVATOR, &rising, RISING);
 }
 
-// This is purposely left empty to avoid synchronization
-// problems. The Interrupt Service Routines (ISRs) defined
-// in 'falling()' and 'rising()' handle the entire program
-// flow - code here will only serve to complicate this.
-void loop() {} 
+// Do nothing here to avoid synchronization issues
+void loop() {}
