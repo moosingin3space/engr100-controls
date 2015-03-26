@@ -1,5 +1,9 @@
 # Code for ENGR 100 Blimp
 
+## 2015-03-26
+Removed port reconfiguration for increased performance and vastly simpler
+code.
+
 ## 2015-03-19
 
 The Arduino no longer outputs debugging information, and as such has
