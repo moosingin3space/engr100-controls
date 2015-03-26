@@ -91,7 +91,7 @@ void setup() {
   timers_init_servo_pwm();
   timers_enable_pwm(FRONT_PROPELLER, 77);
   timers_enable_pwm(REAR_PROPELLER, 77);
-  timers_enable_pwm(BRAKE_SERVO, 77);
+  timers_enable_pwm(RUDDER_SERVO, 77);
   timers_enable_pwm(ELEVATOR_SERVO, 77);
 
   // configure input channels

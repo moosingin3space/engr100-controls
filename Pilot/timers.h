@@ -2,22 +2,22 @@
 #pragma once
 
 #include "Arduino.h"
-#include "WProgram.h"
 
-#define SERVO_CYCLES 160000
-#define SERVO_PERIOD SERVO_CYCLES / 8
+#define SERVO_PERIOD 20000
 
 void timers_init_servo_pwm() {
-    ICR = SERVO_PERIOD;
+    TCCR1B = _BV(WGM13);
+    TCCR1A = 0;
+    ICR1 = SERVO_PERIOD;
     TCCR1A = 0;
     TCCR1B = _BV(WGM13) | _BV(CS11);
 
     TCCR2A = 0;
-    TCCR2B = _BV(WGM13) | _BV(CS11);
+    TCCR2B = _BV(WGM20) | _BV(CS11);
 }
 
 void timers_set_pwm(int pin, unsigned int dutyCycle) {
-    unsigned long newPeriod = (PERIOD * dutyCycle) >> 10;
+    unsigned long newPeriod = (SERVO_PERIOD * dutyCycle) >> 10;
     if (pin == 9) { // Timer 1 pin A
         OCR1A = dutyCycle;
     } else if (pin == 10) { // Timer 1 pin B
@@ -42,4 +42,5 @@ void timers_enable_pwm(int pin, unsigned int dutyCycle) {
     }
     timers_set_pwm(pin, dutyCycle);
     TCCR1B = _BV(WGM13) | _BV(CS11);
+    TCCR2B = _BV(WGM20) | _BV(CS11);
 }

@@ -8,7 +8,7 @@
 #define IN_BRAKE A4
 
 // Output channels for each control
-#define FRONT_PROPELLER 5
+#define FRONT_PROPELLER 9
 #define REAR_PROPELLER 11
 #define RUDDER_SERVO 10
 #define ELEVATOR_SERVO 3
