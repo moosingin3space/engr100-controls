@@ -22,8 +22,8 @@ volatile int rudderTime = 0;
 volatile int elevatorTime = 0;
 
 inline void writeThrottle(int mus) {
-    Timer1.setPwmDuty(FRONT_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 51, 102));
-    Timer1.setPwmDuty(REAR_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 51, 102));
+    analogWrite(FRONT_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 0, 255));
+    analogWrite(REAR_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 0, 255));
 }
 
 inline void writeRudder(int mus) {
@@ -94,8 +94,8 @@ void setup() {
 
   // Initialize timer
   Timer1.initialize(20000); 
-  Timer1.pwm(FRONT_PROPELLER, 51);
-  Timer1.pwm(REAR_PROPELLER, 51);
+  analogWrite(FRONT_PROPELLER, 0);
+  analogWrite(REAR_PROPELLER, 0);
   Timer1.pwm(RUDDER_SERVO, 77);
   Timer1.pwm(ELEVATOR_SERVO, 77);
 
