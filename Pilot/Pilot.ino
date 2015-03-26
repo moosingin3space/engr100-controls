@@ -1,5 +1,7 @@
 // Used to write PWM signals
 #include <Servo.h>
+// Used for pin change interrupts
+#include <PinChangeInt.h>
 // Contains blimp channel configuration
 #include "localdefs.h"
 
@@ -14,6 +16,29 @@ Servo frontPropeller;
 Servo rearPropeller;
 Servo rudderServo;
 Servo elevatorServo;
+
+// Holds the most recent rising-edge times
+volatile int throttlePrevTime = 0;
+volatile int rudderPrevTime = 0;
+volatile int elevatorPrevTime = 0;
+
+// Holds the most recent times
+volatile int throttleTime = 0;
+volatile int rudderTime = 0;
+volatile int elevatorTime = 0;
+
+inline void writeThrottle(int mus) {
+    frontPropeller.writeMicroseconds(mus);
+    rearPropeller.writeMicroseconds(mus);
+}
+
+inline void writeRudder(int mus) {
+    rudderServo.writeMicroseconds(mus);
+}
+
+inline void writeElevator(int mus) {
+    elevatorServo.writeMicroseconds(mus);
+}
 
 // Amplifies the PWM signal stored in 'time'
 // by the 100-based 'gain' parameter.
@@ -31,9 +56,38 @@ int amplify(int time, int gain, int offset) {
   return outTime;
 }
 
-// Reads a PWM signal synchronously
-void readPWM(int pin) {
-    return constrain(pulseIn(pin, HIGH, 50000), PWM_MIN, PWM_MAX);
+// Rising-edge interrupt handler
+void rising() {
+    uint8_t pin = PCintPort::arduinoPin;
+    PCintPort::attachInterrupt(pin, &falling, FALLING);
+    switch(pin) {
+        case IN_THROTTLE: throttlePrevTime = micros();
+                          break;
+        case IN_RUDDER:   rudderPrevTime = micros();
+                          break;
+        case IN_ELEVATOR: elevatorPrevTime = micros();
+                          break;
+    }
+}
+
+// Falling-edge interrupt handler
+void falling() {
+    uint8_t pin = PCintPort::arduinoPin;
+    PCintPort::attachInterrupt(pin, &rising, RISING);
+    switch(pin) {
+        case IN_THROTTLE: throttleTime = micros() - throttlePrevTime;
+                          throttleTime = amplify(throttleTime, THROTTLE_GAIN, THROTTLE_OFFSET);
+                          writeThrottle(throttleTime);
+                          break;
+        case IN_RUDDER:   rudderTime = micros() - rudderPrevTime;
+                          rudderTime = amplify(rudderTime, RUDDER_GAIN, RUDDER_OFFSET);
+                          writeRudder(rudderTime);
+                          break;
+        case IN_ELEVATOR: elevatorTime = micros() - elevatorPrevTime;
+                          elevatorTime = amplify(elevatorTime, ELEVATOR_GAIN, ELEVATOR_OFFSET);
+                          writeElevator(elevatorTime);
+                          break;
+    }
 }
 
 // Initialize the program
@@ -49,23 +103,16 @@ void setup() {
   pinMode(IN_RUDDER, INPUT);
   pinMode(IN_ELEVATOR, INPUT);
   pinMode(IN_BRAKE, INPUT);
+  // Activate 20kohm pull-up resistors
+  digitalWrite(IN_THROTTLE, HIGH);
+  digitalWrite(IN_RUDDER, HIGH);
+  digitalWrite(IN_ELEVATOR, HIGH);
+  digitalWrite(IN_BRAKE, HIGH);
+  // Attach rising-edge interrupts
+  PCintPort::attachInterrupt(IN_THROTTLE, &rising, RISING);
+  PCintPort::attachInterrupt(IN_RUDDER, &rising, RISING);
+  PCintPort::attachInterrupt(IN_ELEVATOR, &rising, RISING);
 }
 
-// Run repeatedly
-void loop() {
-    // Throttle
-    int throttleTime = readPWM(IN_THROTTLE);
-    throttleTime = amplify(throttleTime, THROTTLE_GAIN, THROTTLE_OFFSET);
-    frontPropeller.writeMicroseconds(throttleTime);
-    rearPropeller.writeMicroseconds(throttleTime);
-
-    // Rudder
-    int rudderTime = readPWM(IN_RUDDER);
-    rudderTime = amplify(rudderTime, RUDDER_GAIN, RUDDER_OFFSET);
-    rudderServo.writeMicroseconds(rudderTime);
-
-    // Elevator
-    int elevatorTime = readPWM(IN_ELEVATOR);
-    elevatorTime = amplify(elevatorTime, ELEVATOR_GAIN, ELEVATOR_OFFSET);
-    elevatorServo.writeMicroseconds(elevatorTime);
-} 
+// Do nothing here to avoid synchronization issues
+void loop() {}
