@@ -1,5 +1,5 @@
-// Used to write PWM signals (from Paul Stoffregen)
-#include "TimerOne.h"
+// Used to write PWM signals
+#include "timers.h"
 // Used for pin change interrupts
 #include <PinChangeInt.h>
 // Contains blimp channel configuration
@@ -16,22 +16,17 @@ volatile int throttlePrevTime = 0;
 volatile int rudderPrevTime = 0;
 volatile int elevatorPrevTime = 0;
 
-// Holds the most recent times
-volatile int throttleTime = 0;
-volatile int rudderTime = 0;
-volatile int elevatorTime = 0;
-
 inline void writeThrottle(int mus) {
-    Timer1.setPwmDuty(FRONT_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 51, 102));
-    Timer1.setPwmDuty(REAR_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 51, 102));
+    timers_set_pwm(FRONT_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 51, 102));
+    timers_set_pwm(REAR_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 51, 102));
 }
 
 inline void writeRudder(int mus) {
-    Timer1.setPwmDuty(RUDDER_SERVO, map(mus, PWM_MIN, PWM_MAX, 51, 102));
+    timers_set_pwm(RUDDER_SERVO, map(mus, PWM_MIN, PWM_MAX, 51, 102));
 }
 
 inline void writeElevator(int mus) {
-    Timer1.setPwmDuty(ELEVATOR_SERVO, map(mus, PWM_MIN, PWM_MAX, 51, 102));
+    timers_set_pwm(ELEVATOR_SERVO, map(mus, PWM_MIN, PWM_MAX, 51, 102));
 }
 
 // Amplifies the PWM signal stored in 'time'
@@ -67,37 +62,37 @@ void rising() {
 // Falling-edge interrupt handler
 void falling() {
     uint8_t pin = PCintPort::arduinoPin;
+    int throttleTime;
+    int rudderTime;
+    int elevatorTime;
     PCintPort::attachInterrupt(pin, &rising, RISING);
     switch(pin) {
-        case IN_THROTTLE: throttleTime = micros() - throttlePrevTime;
-                          throttleTime = amplify(throttleTime, THROTTLE_GAIN, THROTTLE_OFFSET);
-                          writeThrottle(throttleTime);
-                          break;
-        case IN_RUDDER:   rudderTime = micros() - rudderPrevTime;
-                          rudderTime = amplify(rudderTime, RUDDER_GAIN, RUDDER_OFFSET);
-                          writeRudder(rudderTime);
-                          break;
-        case IN_ELEVATOR: elevatorTime = micros() - elevatorPrevTime;
-                          elevatorTime = amplify(elevatorTime, ELEVATOR_GAIN, ELEVATOR_OFFSET);
-                          writeElevator(elevatorTime);
-                          break;
+        case IN_THROTTLE:
+          throttleTime = micros() - throttlePrevTime;
+          throttleTime = amplify(throttleTime, THROTTLE_GAIN, THROTTLE_OFFSET);
+          writeThrottle(throttleTime);
+          break;
+        case IN_RUDDER:   
+          rudderTime = micros() - rudderPrevTime;
+          rudderTime = amplify(rudderTime, RUDDER_GAIN, RUDDER_OFFSET);
+          writeRudder(rudderTime);
+          break;
+        case IN_ELEVATOR: 
+          elevatorTime = micros() - elevatorPrevTime;
+          elevatorTime = amplify(elevatorTime, ELEVATOR_GAIN, ELEVATOR_OFFSET);
+          writeElevator(elevatorTime);
+          break;
     }
 }
 
 // Initialize the program
 void setup() {
   // initialize output servos
-  pinMode(FRONT_PROPELLER, OUTPUT);
-  pinMode(REAR_PROPERLLER, OUTPUT);
-  pinMode(RUDDER_SERVO, OUTPUT);
-  pinMode(ELEVATOR_SERVO, OUTPUT);
-
-  // Initialize timer
-  Timer1.initialize(20000); 
-  Timer1.pwm(FRONT_PROPELLER, 51);
-  Timer1.pwm(REAR_PROPELLER, 51);
-  Timer1.pwm(RUDDER_SERVO, 77);
-  Timer1.pwm(ELEVATOR_SERVO, 77);
+  timers_init_servo_pwm();
+  timers_enable_pwm(FRONT_PROPELLER, 77);
+  timers_enable_pwm(REAR_PROPELLER, 77);
+  timers_enable_pwm(BRAKE_SERVO, 77);
+  timers_enable_pwm(ELEVATOR_SERVO, 77);
 
   // configure input channels
   pinMode(IN_THROTTLE, INPUT);
