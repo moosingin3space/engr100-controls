@@ -1,5 +1,5 @@
-// Used to write PWM signals
-#include <TimerOne.h>
+// Used to write PWM signals (from Paul Stoffregen)
+#include "TimerOne.h"
 // Used for pin change interrupts
 #include <PinChangeInt.h>
 // Contains blimp channel configuration
