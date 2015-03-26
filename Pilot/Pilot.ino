@@ -1,5 +1,5 @@
 // Used to write PWM signals
-#include <Servo.h>
+#include <TimerOne.h>
 // Used for pin change interrupts
 #include <PinChangeInt.h>
 // Contains blimp channel configuration
@@ -10,12 +10,6 @@
 // that the servos are sent.
 #define PWM_MIN 900
 #define PWM_MAX 2100
-
-// Define all outputs
-Servo frontPropeller;
-Servo rearPropeller;
-Servo rudderServo;
-Servo elevatorServo;
 
 // Holds the most recent rising-edge times
 volatile int throttlePrevTime = 0;
@@ -28,16 +22,16 @@ volatile int rudderTime = 0;
 volatile int elevatorTime = 0;
 
 inline void writeThrottle(int mus) {
-    frontPropeller.writeMicroseconds(mus);
-    rearPropeller.writeMicroseconds(mus);
+    Timer1.setPwmDuty(FRONT_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 51, 102));
+    Timer1.setPwmDuty(REAR_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 51, 102));
 }
 
 inline void writeRudder(int mus) {
-    rudderServo.writeMicroseconds(mus);
+    Timer1.setPwmDuty(RUDDER_SERVO, map(mus, PWM_MIN, PWM_MAX, 51, 102));
 }
 
 inline void writeElevator(int mus) {
-    elevatorServo.writeMicroseconds(mus);
+    Timer1.setPwmDuty(ELEVATOR_SERVO, map(mus, PWM_MIN, PWM_MAX, 51, 102));
 }
 
 // Amplifies the PWM signal stored in 'time'
@@ -93,10 +87,17 @@ void falling() {
 // Initialize the program
 void setup() {
   // initialize output servos
-  frontPropeller.attach(FRONT_PROPELLER);
-  rearPropeller.attach(REAR_PROPELLER);
-  rudderServo.attach(RUDDER_SERVO);
-  elevatorServo.attach(ELEVATOR_SERVO);
+  pinMode(FRONT_PROPELLER, OUTPUT);
+  pinMode(REAR_PROPERLLER, OUTPUT);
+  pinMode(RUDDER_SERVO, OUTPUT);
+  pinMode(ELEVATOR_SERVO, OUTPUT);
+
+  // Initialize timer
+  Timer1.initialize(20000); 
+  Timer1.pwm(FRONT_PROPELLER, 51);
+  Timer1.pwm(REAR_PROPELLER, 51);
+  Timer1.pwm(RUDDER_SERVO, 77);
+  Timer1.pwm(ELEVATOR_SERVO, 77);
 
   // configure input channels
   pinMode(IN_THROTTLE, INPUT);
