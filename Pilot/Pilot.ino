@@ -87,15 +87,11 @@ void falling() {
 // Initialize the program
 void setup() {
   // initialize output servos
-  pinMode(FRONT_PROPELLER, OUTPUT);
-  pinMode(REAR_PROPERLLER, OUTPUT);
-  pinMode(RUDDER_SERVO, OUTPUT);
-  pinMode(ELEVATOR_SERVO, OUTPUT);
-
-  // Initialize timer
-  Timer1.initialize(20000); 
-  analogWrite(FRONT_PROPELLER, 0);
-  analogWrite(REAR_PROPELLER, 0);
+  pinMode(FRONT_PROPELLER_DIR, OUTPUT);
+  pinMode(REAR_PROPELLER_DIR, OUTPUT);
+  digitalWrite(FRONT_PROPELLER_DIR, LOW);
+  digitalWrite(REAR_PROPELLER_DIR, LOW);
+  Timer1.initialize(20000);
   Timer1.pwm(RUDDER_SERVO, 77);
   Timer1.pwm(ELEVATOR_SERVO, 77);
 
