@@ -40,13 +40,13 @@ inline void writeElevator(int mus) {
 // the amplification.
 int amplify(int time, int gain, int offset) {
   // start by mapping the time to a percentage power scale
-  int pct = map(time, PWM_MIN, PWM_MAX, -100, 100);
+  int pct = map(time, PWM_MIN, PWM_MAX, 0, 100);
   // Now, multiply by the gain and map it back to a percentage power scale
-  int outPct = map(constrain(pct * gain, -10000, 10000), -10000, 10000, -100, 100);
+  int outPct = map(constrain(pct * gain, 0, 10000), 0, 10000, 0, 100);
   // Now, add the offset
-  outPct = constrain(outPct + offset, -100, 100);
+  outPct = constrain(outPct + offset, 0, 100);
   // Now, map it back to a PWM scale
-  int outTime = map(outPct, -100, 100, PWM_MIN, PWM_MAX);
+  int outTime = map(outPct, 0, 100, PWM_MIN, PWM_MAX);
   return outTime;
 }
 

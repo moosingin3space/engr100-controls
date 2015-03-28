@@ -17,14 +17,10 @@
 #define FRONT_PROPELLER_DIR 4
 #define REAR_PROPELLER_DIR 7
 
-// This gain enables the full range-of-motion of a servo without the need for
-// the trim-tabs.
-#define SERVO_FULL_RANGE_OF_MOTION 162
-
 // Amplifier gains
-#define THROTTLE_GAIN 100
+#define THROTTLE_GAIN 170
 #define RUDDER_GAIN 100
-#define ELEVATOR_GAIN 100
+#define ELEVATOR_GAIN 190
 
 // Amplifier offsets
 #define THROTTLE_OFFSET 0
