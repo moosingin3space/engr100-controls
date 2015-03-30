@@ -1,5 +1,13 @@
 # Code for ENGR 100 Blimp
 
+## 2015-03-28
+Implemented trimless elevator and throttle controls (merged from branch
+`gains`) and successfully flew the blimp.
+
+## 2015-03-27
+Added working H-Bridge code (merged from branch `h-bridge`) and successfully
+flew the blimp.
+
 ## 2015-03-26
 Removed port reconfiguration for increased performance and vastly simpler
 code.
