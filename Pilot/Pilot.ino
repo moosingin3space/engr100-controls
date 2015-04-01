@@ -21,15 +21,18 @@ volatile int throttleTime = 0;
 volatile int rudderTime = 0;
 volatile int elevatorTime = 0;
 
+// Writes the microsecond value to the throttle
 inline void writeThrottle(int mus) {
     analogWrite(FRONT_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 0, 255));
     analogWrite(REAR_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 0, 255));
 }
 
+// Writes the microsecond value to the rudder servo
 inline void writeRudder(int mus) {
     Timer1.setPwmDuty(RUDDER_SERVO, map(mus, PWM_MIN, PWM_MAX, 51, 102));
 }
 
+// Writes the microsecond value to the elevator servo
 inline void writeElevator(int mus) {
     Timer1.setPwmDuty(ELEVATOR_SERVO, map(mus, PWM_MIN, PWM_MAX, 51, 102));
 }
@@ -69,15 +72,18 @@ void falling() {
     uint8_t pin = PCintPort::arduinoPin;
     PCintPort::attachInterrupt(pin, &rising, RISING);
     switch(pin) {
-        case IN_THROTTLE: throttleTime = micros() - throttlePrevTime;
+        case IN_THROTTLE: throttleTime = micros() - throttlePrevTime; // Calculate time
+                          // Amplify the signal
                           throttleTime = amplify(throttleTime, THROTTLE_GAIN, THROTTLE_OFFSET);
                           writeThrottle(throttleTime);
                           break;
-        case IN_RUDDER:   rudderTime = micros() - rudderPrevTime;
+        case IN_RUDDER:   rudderTime = micros() - rudderPrevTime; // Calculate time
+                          // Amplify the signal
                           rudderTime = amplify(rudderTime, RUDDER_GAIN, RUDDER_OFFSET);
                           writeRudder(rudderTime);
                           break;
-        case IN_ELEVATOR: elevatorTime = micros() - elevatorPrevTime;
+        case IN_ELEVATOR: elevatorTime = micros() - elevatorPrevTime; // Calculate time
+                          // Amplify the signal
                           elevatorTime = amplify(elevatorTime, ELEVATOR_GAIN, ELEVATOR_OFFSET);
                           writeElevator(elevatorTime);
                           break;
@@ -86,11 +92,13 @@ void falling() {
 
 // Initialize the program
 void setup() {
-  // initialize output servos
+  // initialize H-bridge
   pinMode(FRONT_PROPELLER_DIR, OUTPUT);
   pinMode(REAR_PROPELLER_DIR, OUTPUT);
   digitalWrite(FRONT_PROPELLER_DIR, LOW);
   digitalWrite(REAR_PROPELLER_DIR, LOW);
+
+  // Initialize timer
   Timer1.initialize(20000);
   Timer1.pwm(RUDDER_SERVO, 77);
   Timer1.pwm(ELEVATOR_SERVO, 77);
