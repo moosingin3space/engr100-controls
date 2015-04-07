@@ -69,7 +69,7 @@ int trimlessServo(int duty) {
 int trimlessThrottle(int duty) {
     // TODO test this
     // Start by upscaling
-    int upscaledDuty = map(duty, TRIMLESS_MIN, TRIMMED_MAX, THROTTLE_MIN, THROTTLE_MAX);
+    int upscaledDuty = map(duty, TRIMLESS_MIN, TRIMLESS_MAX, THROTTLE_MIN, THROTTLE_MAX);
     // Now constrain the output to trimless range
     return constrain(upscaledDuty, THROTTLE_MIN, THROTTLE_MAX);
 }
