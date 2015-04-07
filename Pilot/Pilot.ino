@@ -94,17 +94,17 @@ void falling() {
     uint8_t pin = PCintPort::arduinoPin;
     PCintPort::attachInterrupt(pin, &rising, RISING);
     switch(pin) {
-        case IN_THROTTLE: throttleDuty = trimlessThrottle(micros() - throttlePrevTime); // Calculate time
+        case IN_THROTTLE: throttleDuty = pulse2duty(micros() - throttlePrevTime); // Calculate duty
                           // Amplify the signal
                           throttleDuty = trimlessThrottle(throttleDuty);
                           writeThrottle(throttleDuty);
                           break;
-        case IN_RUDDER:   rudderDuty = pulse2duty(micros() - rudderPrevTime); // Calculate time
+        case IN_RUDDER:   rudderDuty = pulse2duty(micros() - rudderPrevTime); // Calculate duty
                           // Convert to a trimless signal
                           rudderDuty = trimlessServo(rudderDuty);
                           writeRudder(rudderDuty);
                           break;
-        case IN_ELEVATOR: elevatorDuty = pulse2duty(micros() - elevatorPrevTime); // Calculate time
+        case IN_ELEVATOR: elevatorDuty = pulse2duty(micros() - elevatorPrevTime); // Calculate duty
                           // Convert to a trimless signal
                           elevatorDuty = trimlessServo(elevatorDuty);
                           writeElevator(elevatorDuty);
