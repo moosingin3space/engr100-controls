@@ -8,8 +8,8 @@
 // These macros define the range of the
 // trimmed controls with the trim at 
 // the center
-#define TRIMMED_MIN 69
-#define TRIMMED_MAX 95
+#define TRIMMED_MIN 55
+#define TRIMMED_MAX 99
 
 // These macros define the range of the 
 // trimless controls.
@@ -69,7 +69,7 @@ int trimlessServo(int duty) {
 int trimlessThrottle(int duty) {
     // TODO test this
     // Start by upscaling
-    int upscaledDuty = map(duty, TRIMLESS_MIN, TRIMLESS_MAX, THROTTLE_MIN, THROTTLE_MAX);
+    int upscaledDuty = map(duty, TRIMMED_MIN, TRIMMED_MAX, THROTTLE_MIN, THROTTLE_MAX);
     // Now constrain the output to trimless range
     return constrain(upscaledDuty, THROTTLE_MIN, THROTTLE_MAX);
 }
