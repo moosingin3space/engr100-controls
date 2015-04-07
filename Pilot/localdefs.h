@@ -16,13 +16,3 @@
 // Direction channels
 #define FRONT_PROPELLER_DIR 4
 #define REAR_PROPELLER_DIR 7
-
-// Amplifier gains
-#define THROTTLE_GAIN 170
-#define RUDDER_GAIN 100
-#define ELEVATOR_GAIN 190
-
-// Amplifier offsets
-#define THROTTLE_OFFSET 0
-#define RUDDER_OFFSET 0
-#define ELEVATOR_OFFSET 0

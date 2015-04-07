@@ -5,55 +5,77 @@
 // Contains blimp channel configuration
 #include "localdefs.h"
 
+// These macros define the range of the
+// trimmed controls with the trim at 
+// the center
+#define TRIMMED_MIN 69
+#define TRIMMED_MAX 95
+
 // These macros define the range of the 
-// PWM signals that the radio receives and
-// that the servos are sent.
-#define PWM_MIN 900
-#define PWM_MAX 2100
+// trimless controls.
+#define TRIMLESS_MIN 45
+#define TRIMLESS_MAX 108
+
+// This macro defines the center of the 
+// servo range 
+#define CENTER 77 
+
+// These macros define the duty cycle 
+// range for the throttle
+#define THROTTLE_MIN 0
+#define THROTTLE_MAX 255
 
 // Holds the most recent rising-edge times
 volatile int throttlePrevTime = 0;
 volatile int rudderPrevTime = 0;
 volatile int elevatorPrevTime = 0;
 
-// Holds the most recent times
-volatile int throttleTime = 0;
-volatile int rudderTime = 0;
-volatile int elevatorTime = 0;
+// Holds the current duty cycles
+volatile int throttleDuty = 0;
+volatile int rudderDuty = 0;
+volatile int elevatorDuty = 0;
+
+// Converts from pulse-width to duty cycle.
+inline int pulse2duty(int pulse) {
+    return (pulse*1023)/20000;
+}
 
 // Writes the microsecond value to the throttle
-inline void writeThrottle(int mus) {
-    analogWrite(FRONT_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 0, 255));
-    analogWrite(REAR_PROPELLER, map(mus, PWM_MIN, PWM_MAX, 0, 255));
+inline void writeThrottle(int duty) {
+    analogWrite(FRONT_PROPELLER, duty);
+    analogWrite(REAR_PROPELLER, duty);
 }
 
 // Writes the microsecond value to the rudder servo
-inline void writeRudder(int mus) {
-    Timer1.setPwmDuty(RUDDER_SERVO, map(mus, PWM_MIN, PWM_MAX, 51, 102));
+inline void writeRudder(int duty) {
+    Timer1.setPwmDuty(RUDDER_SERVO, duty);
 }
 
 // Writes the microsecond value to the elevator servo
-inline void writeElevator(int mus) {
-    Timer1.setPwmDuty(ELEVATOR_SERVO, map(mus, PWM_MIN, PWM_MAX, 51, 102));
+inline void writeElevator(int duty) {
+    Timer1.setPwmDuty(ELEVATOR_SERVO, duty);
 }
 
-// Amplifies the PWM signal stored in 'time'
-// by the 100-based 'gain' parameter.
-// The offset parameter is applied after
-// the amplification.
-int amplify(int time, int gain, int offset) {
-  // start by mapping the time to a percentage power scale
-  int pct = map(time, PWM_MIN, PWM_MAX, 0, 100);
-  // Now, multiply by the gain and map it back to a percentage power scale
-  int outPct = map(constrain(pct * gain, 0, 10000), 0, 10000, 0, 100);
-  // Now, add the offset
-  outPct = constrain(outPct + offset, 0, 100);
-  // Now, map it back to a PWM scale
-  int outTime = map(outPct, 0, 100, PWM_MIN, PWM_MAX);
-  return outTime;
+// Converts a trimmed value to a trimless value (for servos)
+int trimlessServo(int duty) {
+    // TODO test this
+    // Start with upscaling
+    int upscaledDuty = map(duty, TRIMMED_MIN, TRIMMED_MAX, TRIMLESS_MIN, TRIMLESS_MAX);
+    // Now constrain the output to trimless range
+    return constrain(upscaledDuty, TRIMLESS_MIN, TRIMLESS_MAX);
+}
+
+// Converts a trimmed value to a trimless value (for throttle)
+int trimlessThrottle(int duty) {
+    // TODO test this
+    // Start by upscaling
+    int upscaledDuty = map(duty, TRIMLESS_MIN, TRIMMED_MAX, THROTTLE_MIN, THROTTLE_MAX);
+    // Now constrain the output to trimless range
+    return constrain(upscaledDuty, THROTTLE_MIN, THROTTLE_MAX);
 }
 
 // Rising-edge interrupt handler
+// Just store the times
 void rising() {
     uint8_t pin = PCintPort::arduinoPin;
     PCintPort::attachInterrupt(pin, &falling, FALLING);
@@ -72,20 +94,20 @@ void falling() {
     uint8_t pin = PCintPort::arduinoPin;
     PCintPort::attachInterrupt(pin, &rising, RISING);
     switch(pin) {
-        case IN_THROTTLE: throttleTime = micros() - throttlePrevTime; // Calculate time
+        case IN_THROTTLE: throttleDuty = trimlessThrottle(micros() - throttlePrevTime); // Calculate time
                           // Amplify the signal
-                          throttleTime = amplify(throttleTime, THROTTLE_GAIN, THROTTLE_OFFSET);
-                          writeThrottle(throttleTime);
+                          throttleDuty = trimlessThrottle(throttleDuty);
+                          writeThrottle(throttleDuty);
                           break;
-        case IN_RUDDER:   rudderTime = micros() - rudderPrevTime; // Calculate time
-                          // Amplify the signal
-                          rudderTime = amplify(rudderTime, RUDDER_GAIN, RUDDER_OFFSET);
-                          writeRudder(rudderTime);
+        case IN_RUDDER:   rudderDuty = pulse2duty(micros() - rudderPrevTime); // Calculate time
+                          // Convert to a trimless signal
+                          rudderDuty = trimlessServo(rudderDuty);
+                          writeRudder(rudderDuty);
                           break;
-        case IN_ELEVATOR: elevatorTime = micros() - elevatorPrevTime; // Calculate time
-                          // Amplify the signal
-                          elevatorTime = amplify(elevatorTime, ELEVATOR_GAIN, ELEVATOR_OFFSET);
-                          writeElevator(elevatorTime);
+        case IN_ELEVATOR: elevatorDuty = pulse2duty(micros() - elevatorPrevTime); // Calculate time
+                          // Convert to a trimless signal
+                          elevatorDuty = trimlessServo(elevatorDuty);
+                          writeElevator(elevatorDuty);
                           break;
     }
 }
@@ -100,8 +122,8 @@ void setup() {
 
   // Initialize timer
   Timer1.initialize(20000);
-  Timer1.pwm(RUDDER_SERVO, 77);
-  Timer1.pwm(ELEVATOR_SERVO, 77);
+  Timer1.pwm(RUDDER_SERVO, CENTER);
+  Timer1.pwm(ELEVATOR_SERVO, CENTER);
 
   // configure input channels
   pinMode(IN_THROTTLE, INPUT);
