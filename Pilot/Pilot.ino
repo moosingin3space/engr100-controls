@@ -6,10 +6,9 @@
 #include "localdefs.h"
 
 // These macros define the range of the
-// trimmed controls with the trim at 
-// the center
-#define TRIMMED_MIN 55
-#define TRIMMED_MAX 99
+// trimmed pulse widths
+#define TRIMMED_MIN 1060
+#define TRIMMED_MAX 1920
 
 // These macros define the range of the 
 // trimless controls.
@@ -30,15 +29,15 @@ volatile int throttlePrevTime = 0;
 volatile int rudderPrevTime = 0;
 volatile int elevatorPrevTime = 0;
 
-// Holds the current duty cycles
+// Holds the current PWM times
+volatile int throttleTime = 0;
+volatile int rudderTime = 0;
+volatile int elevatorTime = 0;
+
+// Holds the current output duty cycles
 volatile int throttleDuty = 0;
 volatile int rudderDuty = 0;
 volatile int elevatorDuty = 0;
-
-// Converts from pulse-width to duty cycle.
-inline int pulse2duty(int pulse) {
-    return (pulse*1023)/20000;
-}
 
 // Writes the microsecond value to the throttle
 inline void writeThrottle(int duty) {
@@ -54,24 +53,6 @@ inline void writeRudder(int duty) {
 // Writes the microsecond value to the elevator servo
 inline void writeElevator(int duty) {
     Timer1.setPwmDuty(ELEVATOR_SERVO, duty);
-}
-
-// Converts a trimmed value to a trimless value (for servos)
-int trimlessServo(int duty) {
-    // TODO test this
-    // Start with upscaling
-    int upscaledDuty = map(duty, TRIMMED_MIN, TRIMMED_MAX, TRIMLESS_MIN, TRIMLESS_MAX);
-    // Now constrain the output to trimless range
-    return constrain(upscaledDuty, TRIMLESS_MIN, TRIMLESS_MAX);
-}
-
-// Converts a trimmed value to a trimless value (for throttle)
-int trimlessThrottle(int duty) {
-    // TODO test this
-    // Start by upscaling
-    int upscaledDuty = map(duty, TRIMMED_MIN, TRIMMED_MAX, THROTTLE_MIN, THROTTLE_MAX);
-    // Now constrain the output to trimless range
-    return constrain(upscaledDuty, THROTTLE_MIN, THROTTLE_MAX);
 }
 
 // Rising-edge interrupt handler
@@ -94,19 +75,20 @@ void falling() {
     uint8_t pin = PCintPort::arduinoPin;
     PCintPort::attachInterrupt(pin, &rising, RISING);
     switch(pin) {
-        case IN_THROTTLE: throttleDuty = pulse2duty(micros() - throttlePrevTime); // Calculate duty
+        case IN_THROTTLE: throttleTime = micros() - throttlePrevTime; // Calculate duty
+                          throttleDuty = 0;
                           // Amplify the signal
-                          throttleDuty = trimlessThrottle(throttleDuty);
                           writeThrottle(throttleDuty);
                           break;
-        case IN_RUDDER:   rudderDuty = pulse2duty(micros() - rudderPrevTime); // Calculate duty
+        case IN_RUDDER:   rudderTime = micros() - rudderPrevTime; // Calculate duty
                           // Convert to a trimless signal
-                          rudderDuty = trimlessServo(rudderDuty);
+                          rudderDuty = constrain(map(rudderTime, TRIMMED_MIN, TRIMMED_MAX, TRIMLESS_MIN, TRIMLESS_MAX), TRIMLESS_MIN, TRIMLESS_MAX);
+                          Serial.println(rudderDuty);
                           writeRudder(rudderDuty);
                           break;
-        case IN_ELEVATOR: elevatorDuty = pulse2duty(micros() - elevatorPrevTime); // Calculate duty
+        case IN_ELEVATOR: elevatorTime = micros() - elevatorPrevTime; // Calculate duty
+                          elevatorDuty = 0;
                           // Convert to a trimless signal
-                          elevatorDuty = trimlessServo(elevatorDuty);
                           writeElevator(elevatorDuty);
                           break;
     }
@@ -139,6 +121,8 @@ void setup() {
   PCintPort::attachInterrupt(IN_THROTTLE, &rising, RISING);
   PCintPort::attachInterrupt(IN_RUDDER, &rising, RISING);
   PCintPort::attachInterrupt(IN_ELEVATOR, &rising, RISING);
+
+  Serial.begin(9600);
 }
 
 // Do nothing here to avoid synchronization issues
