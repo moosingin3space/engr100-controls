@@ -76,18 +76,17 @@ void falling() {
     PCintPort::attachInterrupt(pin, &rising, RISING);
     switch(pin) {
         case IN_THROTTLE: throttleTime = micros() - throttlePrevTime; // Calculate duty
-                          throttleDuty = 0;
+                          throttleDuty = constrain(map(throttleTime, TRIMMED_MIN, TRIMMED_MAX, THROTTLE_MIN, THROTTLE_MAX), THROTTLE_MIN, THROTTLE_MAX);
                           // Amplify the signal
                           writeThrottle(throttleDuty);
                           break;
         case IN_RUDDER:   rudderTime = micros() - rudderPrevTime; // Calculate duty
                           // Convert to a trimless signal
                           rudderDuty = constrain(map(rudderTime, TRIMMED_MIN, TRIMMED_MAX, TRIMLESS_MIN, TRIMLESS_MAX), TRIMLESS_MIN, TRIMLESS_MAX);
-                          Serial.println(rudderDuty);
                           writeRudder(rudderDuty);
                           break;
         case IN_ELEVATOR: elevatorTime = micros() - elevatorPrevTime; // Calculate duty
-                          elevatorDuty = 0;
+                          elevatorDuty = constrain(map(elevatorTime, TRIMMED_MIN, TRIMMED_MAX, TRIMLESS_MIN, TRIMLESS_MAX), TRIMLESS_MIN, TRIMLESS_MAX);
                           // Convert to a trimless signal
                           writeElevator(elevatorDuty);
                           break;
@@ -121,8 +120,6 @@ void setup() {
   PCintPort::attachInterrupt(IN_THROTTLE, &rising, RISING);
   PCintPort::attachInterrupt(IN_RUDDER, &rising, RISING);
   PCintPort::attachInterrupt(IN_ELEVATOR, &rising, RISING);
-
-  Serial.begin(9600);
 }
 
 // Do nothing here to avoid synchronization issues
