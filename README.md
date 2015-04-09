@@ -5,6 +5,9 @@ Discovered problems with trimless servo controls. Current revision of
 trimless control is in the branch `trimless` and is being debugged
 independently.
 
+Later integrated new trimless controls that work (merged from branch
+`trimless`).
+
 ## 2015-03-28
 Implemented trimless elevator and throttle controls (merged from branch
 `gains`) and successfully flew the blimp.
