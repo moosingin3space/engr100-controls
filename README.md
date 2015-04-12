@@ -1,5 +1,8 @@
 # Code for ENGR 100 Blimp
 
+## 2015-04-11
+Won the blimp competition!
+
 ## 2015-04-07
 Discovered problems with trimless servo controls. Current revision of
 trimless control is in the branch `trimless` and is being debugged
